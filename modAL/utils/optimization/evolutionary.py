@@ -9,7 +9,7 @@ class Specimen:
 
     def __init__(self, search_space):
         self.search_space = search_space
-        self.genes = self.search_space.sample()
+        self.genes = self.search_space.numpy_sample()
 
     def __repr__(self):
         return "Specimen(%s)" % str(self.genes)
@@ -29,7 +29,9 @@ class Specimen:
         return np.all(self.genes == other.genes)
 
     def mutate(self, max_mutations=5):
-        pass
+        n_mutations = np.random.randint(1, min(max_mutations+1, len(self.genes)+1))
+        mutation_idx = np.random.choice(range(len(self.genes)), size=n_mutations, replace=False)
+        self.genes[mutation_idx] = self.search_space[mutation_idx]
 
     def make_offspring(self, father):
         pass
