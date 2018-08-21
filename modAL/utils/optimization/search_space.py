@@ -12,7 +12,7 @@ class SearchSpace:
         try:
             item = self.space[idx]()
         except TypeError:
-            if isinstance(idx, list):
+            if isinstance(idx, list) or isinstance(idx, np.ndarray):
                 item = np.array([self.space[i]() for i in idx])
             else:
                 raise TypeError('SearchSpace indices must be integers or lists')
