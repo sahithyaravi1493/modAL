@@ -26,6 +26,7 @@ Acquisition functions
 ---------------------
 """
 
+
 def optimizer_PI(optimizer, X, tradeoff=0):
     """
     Probability of improvement acquisition function for Bayesian optimization.
@@ -112,11 +113,13 @@ def optimizer_UCB(optimizer, X, beta=1):
 
     return UCB(mean, std, beta)
 
+
 """
 --------------------------------------------
 Query strategies using acquisition functions
 --------------------------------------------
 """
+
 
 def max_PI(optimizer, X, tradeoff=0, n_instances=1):
     """
