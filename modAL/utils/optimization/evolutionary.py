@@ -46,3 +46,62 @@ class Specimen:
 
         return Specimen(self.search_space, offspring_genes)
 
+
+class EvolutionaryOptimizer:
+
+    def __init__(self, search_space, n_pool, func, parallel=True):
+        assert callable(func), 'function to be optimized needs to be callable'
+
+        self.n_pool = n_pool
+        self.func = func
+        self.pool_fitness = None
+        self.max_fitness = -np.inf
+        self.argmax = None
+
+        if parallel:
+            self.parallel_pool = Pool(processes=cpu_count())
+        else:
+            self.parallel_pool = None
+
+        # assemble initial pool
+        self.search_space = search_space
+        self.specimen_pool = [Specimen(search_space) for _ in range(n_pool)]
+        self._calculate_fitness()
+        self._set_max()
+
+    def __len__(self):
+        return len(self.specimen_pool)
+
+    def __getitem__(self, idx):
+        return self.specimen_pool[idx]
+
+    def __repr__(self):
+        return str(self.specimen_pool)
+
+    def __del__(self):
+        if self.parallel_pool:
+            self.parallel_pool.terminate()
+            del self.parallel_pool
+
+    def _calculate_fitness(self):
+        pass
+
+    def _set_max(self):
+        pass
+
+    def breed(self, p_mutation=0.1, max_mutations=5):
+        pass
+
+    def mutate(self, p_mutation, max_mutations=5):
+        pass
+
+    def select(self):
+        pass
+
+    def run(
+            self, n_generations,
+            p_mutation=0.5, max_mutations=5, n_stopping_criteria=10,
+            verbose=False
+    ):
+
+        pass
