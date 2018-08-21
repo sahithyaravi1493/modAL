@@ -6,10 +6,14 @@ from multiprocessing import Pool, cpu_count
 
 
 class Specimen:
+    __slots__ = ('search_space', 'genes')
 
-    def __init__(self, search_space):
+    def __init__(self, search_space, initial_genes=None):
         self.search_space = search_space
-        self.genes = self.search_space.numpy_sample()
+        if initial_genes is None:
+            self.genes = self.search_space.numpy_sample()
+        elif isinstance(initial_genes, np.ndarray):
+            self.genes = initial_genes
 
     def __repr__(self):
         return "Specimen(%s)" % str(self.genes)
@@ -33,5 +37,12 @@ class Specimen:
         mutation_idx = np.random.choice(range(len(self.genes)), size=n_mutations, replace=False)
         self.genes[mutation_idx] = self.search_space[mutation_idx]
 
-    def make_offspring(self, father):
-        pass
+    def make_offspring(self, father, p_keep=0.5):
+        assert 0 <= p_keep <= 1, 'p_keep must be between one and zero'
+        assert len(father) == len(self.genes), 'the two Specimens to be crossed must contain the same number of genes'
+
+        mother_gene_mask = np.random.choice([True, False], p=[p_keep, 1-p_keep], size=len(self.genes))
+        offspring_genes = self.genes*mother_gene_mask + father.genes*(~mother_gene_mask)
+
+        return Specimen(self.search_space, offspring_genes)
+
