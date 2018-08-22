@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 
 class SearchSpace:
@@ -21,3 +22,6 @@ class SearchSpace:
 
     def numpy_sample(self):
         return np.array([dist() for dist in self.space])
+
+    def sample(self):
+        return [dist() for dist in self.space]
