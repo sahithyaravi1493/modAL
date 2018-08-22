@@ -6,10 +6,11 @@ from multiprocessing import Pool, cpu_count
 
 
 class Specimen:
-    __slots__ = ('search_space', 'genes')
+    __slots__ = ('search_space', 'genes', 'iter_idx')
 
     def __init__(self, search_space, initial_genes=None):
         self.search_space = search_space
+        self.iter_idx = 0
         if initial_genes is None:
             self.genes = self.search_space.numpy_sample()
         elif isinstance(initial_genes, np.ndarray):
@@ -31,6 +32,17 @@ class Specimen:
         assert isinstance(other, Specimen), 'the objects to compare must be an instance of Specimen'
 
         return np.all(self.genes == other.genes)
+
+    def __iter__(self):
+        self.iter_idx = -1
+        return self
+
+    def __next__(self):
+        if self.iter_idx >= len(self.genes)-1:
+            raise StopIteration
+        else:
+            self.iter_idx += 1
+            return self.search_space.var_types[self.iter_idx](self.genes[self.iter_idx])
 
     def reshape(self, *args, **kwargs):
         return self.genes.reshape(*args, **kwargs)
