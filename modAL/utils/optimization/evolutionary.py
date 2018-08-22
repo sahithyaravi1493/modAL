@@ -32,6 +32,9 @@ class Specimen:
 
         return np.all(self.genes == other.genes)
 
+    def reshape(self, *args, **kwargs):
+        return self.genes.reshape(*args, **kwargs)
+
     def mutate(self, max_mutations=5):
         n_mutations = np.random.randint(1, min(max_mutations+1, len(self.genes)+1))
         mutation_idx = np.random.choice(range(len(self.genes)), size=n_mutations, replace=False)
