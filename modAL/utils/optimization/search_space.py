@@ -1,13 +1,13 @@
 import numpy as np
-import pandas as pd
 
 
 class SearchSpace:
-    __slots__ = ('space', 'var_names')
+    __slots__ = ('space', 'var_names', 'var_types')
 
     def __init__(self, *args, **kwargs):
         self.space = list(args) + list(kwargs.values())
         self.var_names = list(kwargs.keys())
+        self.var_types = [type(dist()) for dist in self.space]
 
     def __getitem__(self, idx):
         try:
