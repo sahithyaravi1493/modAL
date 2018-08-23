@@ -44,6 +44,9 @@ class Specimen:
             self.iter_idx += 1
             return self.search_space.var_types[self.iter_idx](self.genes[self.iter_idx])
 
+    def __array__(self):
+        return self.genes.reshape(1, -1)
+
     def reshape(self, *args, **kwargs):
         return self.genes.reshape(*args, **kwargs)
 
@@ -60,6 +63,9 @@ class Specimen:
         offspring_genes = self.genes*mother_gene_mask + father.genes*(~mother_gene_mask)
 
         return Specimen(self.search_space, offspring_genes)
+
+    def as_2D_array(self):
+        return self.genes.reshape(1, -1)
 
 
 class EvolutionaryOptimizer:
@@ -99,7 +105,12 @@ class EvolutionaryOptimizer:
             del self.parallel_pool
 
     def _calculate_fitness(self):
-        pass
+        if self.parallel_pool:
+            self.pool_fitness = np.array(
+                self.parallel_pool.map(self.func, self.specimen_pool)
+            ).ravel()
+        else:
+            self.pool_fitness = np.array([self.func(specimen) for specimen in self.specimen_pool]).ravel()
 
     def _set_max(self):
         pass
