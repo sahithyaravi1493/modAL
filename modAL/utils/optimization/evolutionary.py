@@ -38,7 +38,7 @@ class Specimen:
         return self
 
     def __next__(self):
-        if self.iter_idx >= len(self.genes)-1:
+        if self.iter_idx >= len(self)-1:
             raise StopIteration
         else:
             self.iter_idx += 1
@@ -48,15 +48,15 @@ class Specimen:
         return self.genes.reshape(*args, **kwargs)
 
     def mutate(self, max_mutations=5):
-        n_mutations = np.random.randint(1, min(max_mutations+1, len(self.genes)+1))
-        mutation_idx = np.random.choice(range(len(self.genes)), size=n_mutations, replace=False)
+        n_mutations = np.random.randint(1, min(max_mutations+1, len(self)+1))
+        mutation_idx = np.random.choice(range(len(self)), size=n_mutations, replace=False)
         self.genes[mutation_idx] = self.search_space[mutation_idx]
 
     def make_offspring(self, father, p_keep=0.5):
         assert 0 <= p_keep <= 1, 'p_keep must be between one and zero'
-        assert len(father) == len(self.genes), 'the two Specimens to be crossed must contain the same number of genes'
+        assert len(father) == len(self), 'the two Specimens to be crossed must contain the same number of genes'
 
-        mother_gene_mask = np.random.choice([True, False], p=[p_keep, 1-p_keep], size=len(self.genes))
+        mother_gene_mask = np.random.choice([True, False], p=[p_keep, 1-p_keep], size=len(self))
         offspring_genes = self.genes*mother_gene_mask + father.genes*(~mother_gene_mask)
 
         return Specimen(self.search_space, offspring_genes)
