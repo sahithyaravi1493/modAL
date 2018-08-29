@@ -1,7 +1,8 @@
 import numpy as np
 from functools import partial
 
-from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process import GaussianProcessClassifier, GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import Matern
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
@@ -18,9 +19,34 @@ X = iris['data']
 y = iris['target']
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.5)
 
+#################
+# float parameters
+#################
+
+
+def float_params(length_scale: float, nu: float):
+    kernel = Matern(length_scale=length_scale, nu=nu)
+    gpr = GaussianProcessClassifier(kernel=kernel)
+    gpr.fit(X, y)
+    return gpr.score(X_test, y_test)
+
+
+def optimized_EI(regressor, optimizer):
+    result = optimizer(regressor)
+    return result
+
+
+# TODO: add cold start support for acquisition functions
+bayesopt = BayesianOptimizer(GaussianProcessRegressor(), optimized_EI)
+bayesopt.query()
+
+####################################
+# mixed integer and float parameters
+####################################
+
 
 # define the function to be optimized
-def black_box_function(n_estimators: int, max_features: int, min_weight_fraction_leaf: float):
+def mixed_params(n_estimators: int, max_features: int, min_weight_fraction_leaf: float):
     rfc = RandomForestClassifier(
         n_estimators=n_estimators,
         max_features=max_features,

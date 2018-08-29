@@ -467,8 +467,6 @@ class TestActiveLearner(unittest.TestCase):
                     y_new = np.random.randint(0, 2, size=(n_new_samples,))
                     learner._add_training_data(X_new, y_new)
 
-
-
                     # testing for invalid cases
                     # 1. len(X_new) != len(y_new)
                     X_new = np.random.rand(n_new_samples, n_features)
