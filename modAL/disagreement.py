@@ -5,6 +5,7 @@ Disagreement measures and disagreement based query strategies for the Committee 
 import numpy as np
 from collections import Counter
 from scipy.stats import entropy
+from sklearn.exceptions import NotFittedError
 from modAL.utils.selection import multi_argmax
 
 
@@ -35,7 +36,11 @@ def vote_entropy(committee, X, **predict_proba_kwargs):
         Vote entropy of the Committee for the samples in X.
     """
     n_learners = len(committee)
-    votes = committee.vote(X, **predict_proba_kwargs)
+    try:
+        votes = committee.vote(X, **predict_proba_kwargs)
+    except NotFittedError:
+        return np.zeros(shape=(X.shape[0],))
+
     p_vote = np.zeros(shape=(X.shape[0], len(committee.classes_)))
     entr = np.zeros(shape=(X.shape[0],))
 
@@ -77,7 +82,11 @@ def consensus_entropy(committee, X, **predict_proba_kwargs):
       - **entr** *(numpy.ndarray of shape (n_samples, ))* --
         Vote uncertainty entropy of the Committee for the samples in X.
     """
-    proba = committee.predict_proba(X, **predict_proba_kwargs)
+    try:
+        proba = committee.predict_proba(X, **predict_proba_kwargs)
+    except NotFittedError:
+        return np.zeros(shape=(X.shape[0],))
+
     entr = np.transpose(entropy(np.transpose(proba)))
     return entr
 
@@ -110,7 +119,11 @@ def KL_max_disagreement(committee, X, **predict_proba_kwargs):
       - **entr** *(numpy.ndarray of shape (n_samples, ))* --
         Max disagreement of the Committee for the samples in X.
     """
-    p_vote = committee.vote_proba(X, **predict_proba_kwargs)
+    try:
+        p_vote = committee.vote_proba(X, **predict_proba_kwargs)
+    except NotFittedError:
+        return np.zeros(shape=(X.shape[0],))
+
     p_consensus = np.mean(p_vote, axis=1)
 
     learner_KL_div = np.zeros(shape=(len(X), len(committee)))

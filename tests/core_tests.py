@@ -15,6 +15,7 @@ from copy import deepcopy
 from itertools import chain, product
 from collections import namedtuple
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.exceptions import NotFittedError
 from sklearn.metrics import confusion_matrix
 from scipy.stats import entropy, norm
 from scipy.special import ndtr
@@ -33,6 +34,7 @@ class TestUtils(unittest.TestCase):
     def test_check_class_labels(self):
         for n_labels in range(1, 10):
             for n_learners in range(1, 10):
+                # 1. test fitted estimators
                 labels = np.random.randint(10, size=n_labels)
                 different_labels = np.random.randint(10, 20, size=np.random.randint(1, 10))
                 learner_list_1 = [mock.MockEstimator(classes_=labels) for _ in range(n_learners)]
@@ -40,6 +42,12 @@ class TestUtils(unittest.TestCase):
                 shuffled_learners = random.sample(learner_list_1 + learner_list_2, len(learner_list_1 + learner_list_2))
                 self.assertTrue(modAL.utils.validation.check_class_labels(*learner_list_1))
                 self.assertFalse(modAL.utils.validation.check_class_labels(*shuffled_learners))
+
+                # 2. test unfitted estimators
+                unfitted_learner_list = [mock.MockEstimator(classes_=labels) for _ in range(n_learners)]
+                idx = np.random.randint(0, n_learners)
+                unfitted_learner_list.insert(idx, mock.MockEstimator(fitted=False))
+                self.assertRaises(NotFittedError, modAL.utils.validation.check_class_labels, *unfitted_learner_list)
 
     def test_check_class_proba(self):
         for n_labels in range(2, 20):
@@ -145,15 +153,25 @@ class TestAcquisitionFunctions(unittest.TestCase):
             tradeoff = np.random.rand()
             max_val = np.random.rand()
 
-            mock_estimator = mock.MockEstimator(
-                predict_return=(mean, std)
-            )
-            
+            # 1. fitted estimator
+            mock_estimator = mock.MockEstimator(predict_return=(mean, std))
             optimizer = modAL.models.BayesianOptimizer(estimator=mock_estimator)
             optimizer._set_max([0], [max_val])
+            true_PI = ndtr((mean - max_val - tradeoff)/std)
 
             np.testing.assert_almost_equal(
-                ndtr((mean - max_val - tradeoff)/std),
+                true_PI,
+                modAL.acquisition.optimizer_PI(optimizer, np.random.rand(n_samples, 2), tradeoff)
+            )
+
+            # 2. unfitted estimator
+            mock_estimator = mock.MockEstimator(fitted=False)
+            optimizer = modAL.models.BayesianOptimizer(estimator=mock_estimator)
+            optimizer._set_max([0], [max_val])
+            true_PI = ndtr((np.zeros(shape=(len(mean), 1)) - max_val - tradeoff) / np.ones(shape=(len(mean), 1)))
+
+            np.testing.assert_almost_equal(
+                true_PI,
                 modAL.acquisition.optimizer_PI(optimizer, np.random.rand(n_samples, 2), tradeoff)
             )
 
@@ -164,15 +182,26 @@ class TestAcquisitionFunctions(unittest.TestCase):
             tradeoff = np.random.rand()
             max_val = np.random.rand()
 
+            # 1. fitted estimator
             mock_estimator = mock.MockEstimator(
                 predict_return=(mean, std)
             )
-
             optimizer = modAL.models.BayesianOptimizer(estimator=mock_estimator)
             optimizer._set_max([0], [max_val])
-
             true_EI = (mean - optimizer.y_max - tradeoff) * ndtr((mean - optimizer.y_max - tradeoff) / std) \
                       + std * norm.pdf((mean - optimizer.y_max - tradeoff) / std)
+
+            np.testing.assert_almost_equal(
+                true_EI,
+                modAL.acquisition.optimizer_EI(optimizer, np.random.rand(n_samples, 2), tradeoff)
+            )
+
+            # 2. unfitted estimator
+            mock_estimator = mock.MockEstimator(fitted=False)
+            optimizer = modAL.models.BayesianOptimizer(estimator=mock_estimator)
+            optimizer._set_max([0], [max_val])
+            true_EI = (np.zeros(shape=(len(mean), 1)) - optimizer.y_max - tradeoff) * ndtr((np.zeros(shape=(len(mean), 1)) - optimizer.y_max - tradeoff) / np.ones(shape=(len(mean), 1))) \
+                      + np.ones(shape=(len(mean), 1)) * norm.pdf((np.zeros(shape=(len(mean), 1)) - optimizer.y_max - tradeoff) / np.ones(shape=(len(mean), 1)))
 
             np.testing.assert_almost_equal(
                 true_EI,
@@ -185,13 +214,22 @@ class TestAcquisitionFunctions(unittest.TestCase):
             std = np.random.rand(n_samples, 1)
             beta = np.random.rand()
 
+            # 1. fitted estimator
             mock_estimator = mock.MockEstimator(
                 predict_return=(mean, std)
             )
-
             optimizer = modAL.models.BayesianOptimizer(estimator=mock_estimator)
-
             true_UCB = mean + beta*std
+
+            np.testing.assert_almost_equal(
+                true_UCB,
+                modAL.acquisition.optimizer_UCB(optimizer, np.random.rand(n_samples, 2), beta)
+            )
+
+            # 2. unfitted estimator
+            mock_estimator = mock.MockEstimator(fitted=False)
+            optimizer = modAL.models.BayesianOptimizer(estimator=mock_estimator)
+            true_UCB = np.zeros(shape=(len(mean), 1)) + beta * np.ones(shape=(len(mean), 1))
 
             np.testing.assert_almost_equal(
                 true_UCB,
@@ -348,6 +386,7 @@ class TestDisagreements(unittest.TestCase):
         for n_samples in range(1, 10):
             for n_classes in range(1, 10):
                 for true_query_idx in range(n_samples):
+                    # 1. fitted committee
                     vote_return = np.zeros(shape=(n_samples, n_classes), dtype=np.int16)
                     vote_return[true_query_idx] = np.asarray(range(n_classes), dtype=np.int16)
                     committee = mock.MockCommittee(classes_=np.asarray(range(n_classes)), vote_return=vote_return)
@@ -358,25 +397,43 @@ class TestDisagreements(unittest.TestCase):
                     true_entropy[true_query_idx] = entropy(np.ones(n_classes)/n_classes)
                     np.testing.assert_array_almost_equal(vote_entr, true_entropy)
 
+                    # 2. unfitted committee
+                    committee = mock.MockCommittee(fitted=False)
+                    true_entropy = np.zeros(shape=(n_samples,))
+                    vote_entr = modAL.disagreement.vote_entropy(
+                        committee, np.random.rand(n_samples, n_classes)
+                    )
+                    np.testing.assert_almost_equal(vote_entr, true_entropy)
+
     def test_consensus_entropy(self):
         for n_samples in range(1, 10):
             for n_classes in range(2, 10):
                 for true_query_idx in range(n_samples):
+                    # 1. fitted committee
                     proba = np.zeros(shape=(n_samples, n_classes))
                     proba[:, 0] = 1.0
                     proba[true_query_idx] = np.ones(n_classes)/n_classes
                     committee = mock.MockCommittee(predict_proba_return=proba)
-                    uncertainty_entr = modAL.disagreement.consensus_entropy(
+                    consensus_entropy = modAL.disagreement.consensus_entropy(
                         committee, np.random.rand(n_samples, n_classes)
                     )
                     true_entropy = np.zeros(shape=(n_samples,))
                     true_entropy[true_query_idx] = entropy(np.ones(n_classes) / n_classes)
-                    np.testing.assert_array_almost_equal(uncertainty_entr, true_entropy)
+                    np.testing.assert_array_almost_equal(consensus_entropy, true_entropy)
+
+                    # 2. unfitted committee
+                    committee = mock.MockCommittee(fitted=False)
+                    true_entropy = np.zeros(shape=(n_samples,))
+                    consensus_entropy = modAL.disagreement.consensus_entropy(
+                        committee, np.random.rand(n_samples, n_classes)
+                    )
+                    np.testing.assert_almost_equal(consensus_entropy, true_entropy)
 
     def test_KL_max_disagreement(self):
         for n_samples in range(1, 10):
             for n_classes in range(2, 10):
                 for n_learners in range (2, 10):
+                    # 1. fitted committee
                     vote_proba = np.zeros(shape=(n_samples, n_learners, n_classes))
                     vote_proba[:, :, 0] = 1.0
                     committee = mock.MockCommittee(
@@ -393,6 +450,14 @@ class TestDisagreements(unittest.TestCase):
                         )
                     except:
                         modAL.disagreement.KL_max_disagreement(committee, np.random.rand(n_samples, 1))
+
+                    # 2. unfitted committee
+                    committee = mock.MockCommittee(fitted=False)
+                    true_KL_disagreement = np.zeros(shape=(n_samples,))
+                    returned_KL_disagreement = modAL.disagreement.KL_max_disagreement(
+                        committee, np.random.rand(n_samples, n_classes)
+                    )
+                    np.testing.assert_almost_equal(returned_KL_disagreement, true_KL_disagreement)
 
 
 class TestQueries(unittest.TestCase):
@@ -673,6 +738,15 @@ class TestBayesianOptimizer(unittest.TestCase):
 class TestCommittee(unittest.TestCase):
 
     def test_set_classes(self):
+        # 1. test unfitted learners
+        for n_learners in range(1, 10):
+            learner_list = [modAL.models.ActiveLearner(estimator=mock.MockEstimator(fitted=False))
+                            for idx in range(n_learners)]
+            committee = modAL.models.Committee(learner_list=learner_list)
+            self.assertEqual(committee.classes_, None)
+            self.assertEqual(committee.n_classes_, 0)
+
+        # 2. test fitted learners
         for n_classes in range(1, 10):
             learner_list = [modAL.models.ActiveLearner(estimator=mock.MockEstimator(classes_=np.asarray([idx])))
                             for idx in range(n_classes)]
