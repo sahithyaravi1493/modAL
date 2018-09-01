@@ -29,11 +29,15 @@ def arg2Dto1D(func):
 
 
 class UtilityOptimizer:
-    def __init__(self, utility_measure, optimizer_func, *opt_args, **opt_kwargs):
+    def __init__(self, utility_measure, optimizer_func, convert_numpy_arg=False, *opt_args, **opt_kwargs):
         self.utility_measure = utility_measure
         self.optimizer_func = optimizer_func
+        self.convert_numpy_arg = convert_numpy_arg
 
     def __call__(self, model, *optimizer_args, **optimizer_kwargsx):
-        model_utility = partial(self.utility_measure, model)
+        if self.convert_numpy_arg:
+            model_utility = arg2Dto1D(partial(self.utility_measure, model))
+        else:
+            model_utility = partial(self.utility_measure, model)
         result = self.optimizer_func(model_utility, *optimizer_args, **optimizer_kwargsx)
         return result

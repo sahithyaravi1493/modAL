@@ -7,38 +7,50 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from scipy.stats.distributions import randint, uniform
+from scipy.optimize import minimize
 
 from modAL.models import BayesianOptimizer
 from modAL.acquisition import optimizer_EI
+from modAL.utils.optimization.optimizer import UtilityOptimizer
 from modAL.utils.optimization.search_space import SearchSpace
 
 
 # load training data
 iris = load_iris()
 X = iris['data']
-y = iris['target']
+y = iris['target'].reshape(-1, 1)
 X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.5)
 
-#################
+##################
 # float parameters
-#################
+##################
 
 
 def float_params(length_scale: float, nu: float):
     kernel = Matern(length_scale=length_scale, nu=nu)
     gpr = GaussianProcessClassifier(kernel=kernel)
-    gpr.fit(X, y)
+    gpr.fit(X_train, y_train)
     return gpr.score(X_test, y_test)
 
+# obtaining some initial values
+X_initial = (1.0, 1.0)
+y_initial = float_params(*X_initial).reshape(1, -1)
+X_initial = np.array(X_initial).reshape(1, -1)
 
-def optimized_EI(regressor, optimizer):
-    result = optimizer(regressor)
-    return result
+optimizer = UtilityOptimizer(optimizer_EI, partial(minimize, method='L-BFGS-B'), convert_numpy_arg=True)
+bayesopt = BayesianOptimizer(
+    GaussianProcessRegressor(), optimizer,
+    X_training=X_initial, y_training=y_initial
+)
+
+n_queries = 10
+for idx in range(n_queries):
+    query_inst = bayesopt.query(np.array([0, 0])).x
+    func_val = float_params(*list(query_inst))
 
 
-# TODO: add cold start support for acquisition functions
-bayesopt = BayesianOptimizer(GaussianProcessRegressor(), optimized_EI)
-bayesopt.query()
+exit()
+#bayesopt.query()
 
 ####################################
 # mixed integer and float parameters
