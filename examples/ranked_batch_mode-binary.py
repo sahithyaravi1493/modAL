@@ -1,7 +1,8 @@
 import numpy as np
+import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from sklearn.datasets import load_iris
+from sklearn.datasets import load_breast_cancer
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KNeighborsClassifier
 from functools import partial
@@ -13,36 +14,43 @@ from modAL.models import ActiveLearner
 RANDOM_STATE_SEED = 123
 np.random.seed(RANDOM_STATE_SEED)
 
-iris = load_iris()
-X_raw = iris['data']
-y_raw = iris['target']
+bc = load_breast_cancer()
+X_raw = bc['data']
+y_raw = bc['target']
 
 # Define our PCA transformer and fit it onto our raw dataset.
 pca = PCA(n_components=2, random_state=RANDOM_STATE_SEED)
-transformed_iris = pca.fit_transform(X=X_raw)
+transformed_bc = pca.fit_transform(X=X_raw)
 
 # Isolate the data we'll need for plotting.
-x_component, y_component = transformed_iris[:, 0], transformed_iris[:, 1]
+x_component, y_component = transformed_bc[:, 0], transformed_bc[:, 1]
 
 # Plot our dimensionality-reduced (via PCA) dataset.
 with plt.style.context('seaborn-white'):
     plt.figure(figsize=(8.5, 6), dpi=130)
     plt.scatter(x=x_component, y=y_component, c=y_raw, cmap='viridis', s=50, alpha=8/10)
-    plt.title('Iris classes after PCA transformation')
+    plt.title('Breast cancer classes after PCA transformation')
     plt.show()
 
+# convert to dataframe
+df = pd.DataFrame(bc.data, columns=bc.feature_names)
+df.head()
+
 # Isolate our examples for our labeled dataset.
+# Randomly choose 3 examples
 n_labeled_examples = X_raw.shape[0]
 training_indices = np.random.randint(low=0, high=n_labeled_examples + 1, size=3)
 
 X_train = X_raw[training_indices]
 y_train = y_raw[training_indices]
 
+# ?plt.scatter
+
 # Visualize the training data.
 with plt.style.context('seaborn-white'):
     plt.figure(figsize=(6, 6), dpi=100)
-    plt.scatter(transformed_iris[:, 0], transformed_iris[:, 1], c='0.8', label='unlabeled')
-    plt.scatter(transformed_iris[training_indices, 0], transformed_iris[training_indices, 1], c='k', label='labeled')
+    plt.scatter(transformed_bc[:, 0], transformed_bc[:, 1], c='0.8', label='unlabeled')
+    plt.scatter(transformed_bc[training_indices, 0], transformed_bc[training_indices, 1], c='k', label='labeled')
     plt.title('Unlabeled and labeled data')
     plt.legend()
     plt.show()
@@ -85,6 +93,7 @@ with plt.style.context('seaborn-white'):
 # Pool-based sampling
 N_RAW_SAMPLES = 20
 N_QUERIES = N_RAW_SAMPLES // BATCH_SIZE
+N_QUERIES
 
 performance_history = [unqueried_score]
 
@@ -107,15 +116,15 @@ for index in range(N_QUERIES):
     performance_history.append(model_accuracy)
 
     # Visualize the instances selected for query.
-    if index == 0:
+    if index != -1:
         selected = pca.transform(query_instance)
 
         with plt.style.context('seaborn-white'):
             plt.figure(figsize=(6, 6), dpi=100)
-            plt.scatter(transformed_iris[:, 0], transformed_iris[:, 1], c='0.8', label='unlabeled')
-            plt.scatter(transformed_iris[training_indices, 0], transformed_iris[training_indices, 1], c='k',
+            plt.scatter(transformed_bc[:, 0], transformed_bc[:, 1], c='0.8', label='unlabeled')
+            plt.scatter(transformed_bc[training_indices, 0], transformed_bc[training_indices, 1], c='k',
                         label='training')
-            plt.scatter(selected[:, 0], selected[:, 1], c='r', label='1st query')
+            plt.scatter(selected[:, 0], selected[:, 1], c='r', label='query'+str(index))
             plt.title('Unlabeled and labeled data')
             plt.legend()
             plt.show()
@@ -162,3 +171,5 @@ with plt.style.context('seaborn-white'):
     ax.legend(loc='lower right')
 
     plt.show()
+
+
