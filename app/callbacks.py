@@ -36,8 +36,10 @@ def register_callbacks(app):
 
         # Randomly choose training examples
         df_train = df.sample(n=3)
-        df_train_pca = pd.DataFrame(data=pca.fit(df_train)
-                              , columns=['1', '2'])
+        x_train = df_train[raw_data.feature_names]
+        y_train = df_train.drop(raw_data.feature_names, axis=1)
+        pca_mat = pca.fit_transform(df_train)
+        df_train_pca = pd.DataFrame(pca_mat, columns=['1','2'])
 
         # Unlabeled pool
 
@@ -50,7 +52,12 @@ def register_callbacks(app):
                            mode='markers',
                            name='labeled data')
                 ]
+        print(df_train.head())
+        print(df.head())
         #
+        df_pool = df[~df.index.isin(df_train.index)]
+        print(df_pool.index)
+        print(df_train.index)
         # # ML model
         # knn = KNeighborsClassifier(n_jobs=-1, n_neighbors=3)
         # # batch sampling
@@ -60,8 +67,8 @@ def register_callbacks(app):
         #                         X_training=x_train,
         #                         y_training=y_train,
         #                         query_strategy=preset_batch)
-        # predictions = learner.predict(x_raw)
-        # print(" unqueried score", learner.score(x_raw, y_raw))
+        # predictions = learner.predict(x)
+        # print(" unqueried score", learner.score(x, y))
         # if n_clicks is not None and n_clicks > 0:
         #     query_indices, query_instance = learner.query(x_pool)
         #     selected = pca.transform(query_instance)

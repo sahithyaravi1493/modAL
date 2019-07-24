@@ -1,13 +1,14 @@
 import dash
 import dash_html_components as html
 import dash_core_components as dcc
-from callbacks import register_callbacks
+from app.callbacks import register_callbacks
+
 app = dash.Dash(__name__, url_base_pathname='/dashboard/')
 app.config.suppress_callback_exceptions = True
 register_callbacks(app)
 # external_css = [
 #     # Normalize the CSS
-#     "https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css",
+#     "https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css ",
 #     # Fonts
 #     "https://fonts.googleapis.com/css?family=Open+Sans|Roboto",
 #     "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
