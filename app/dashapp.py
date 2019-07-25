@@ -66,6 +66,11 @@ app.layout = html.Div(
 
 
                 ]),
+            html.Div(
+                id='decision-graph',
+                children=(dcc.Graph(id='decision')),
+                style={'width': '60%', 'height': '100%', 'display': 'inline-block', 'position': 'relative'}
+            ),
             html.Button('Next round', id='button'),
         ])
 

@@ -208,4 +208,4 @@ def uncertainty_batch_sampling(classifier: Union[BaseLearner, BaseCommittee],
     uncertainty = classifier_uncertainty(classifier, X, **uncertainty_measure_kwargs)
     query_indices = ranked_batch(classifier, unlabeled=X, uncertainty_scores=uncertainty,
                                  n_instances=n_instances, metric=metric, n_jobs=n_jobs)
-    return query_indices, X[query_indices]
+    return query_indices, X[query_indices], uncertainty
