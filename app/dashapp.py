@@ -6,34 +6,21 @@ from app.callbacks import register_callbacks
 app = dash.Dash(__name__, url_base_pathname='/dashboard/')
 app.config.suppress_callback_exceptions = True
 register_callbacks(app)
-# external_css = [
-#     # Normalize the CSS
-#     "https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css ",
-#     # Fonts
-#     "https://fonts.googleapis.com/css?family=Open+Sans|Roboto",
-#     "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
-# ]
-#
-# for css in external_css:
-#     app.css.append_css({"external_url": css})
-
 # Layout of the app
 app.layout = html.Div(
     children=[
         html.Div(
-        html.H2(html.A('Active Learning Explorer',
-                       style={'text-decoration': 'none', 'color': 'inherit'},
-                       href='https://github.com/plotly/dash-svm')), className="banner",),
-
+            html.H2(html.A('Active Learning Explorer',
+                           style={'text-decoration': 'none', 'color': 'inherit'},
+                           href='https://github.com/plotly/dash-svm')), className="banner",),
         html.Div(children=[
             html.Div(
                 id='div-graphs',
-                children=dcc.Loading(dcc.Graph(id='scatter',
-                                   ), fullscreen=True),
-                style={'width': '60%','height':'100%', 'display': 'inline-block', 'position': 'relative'}
+                children=dcc.Loading(dcc.Graph(id='scatter'), fullscreen=True),
+                style={'width': '60%', 'height': '100%', 'display': 'inline-block', 'position': 'relative'}
             ),
             html.Div(
-               # className='three columns',
+
                 style={'width': '20%', 'display': 'inline-block',
                        'position': 'absolute'},
                 children=[
@@ -73,10 +60,7 @@ app.layout = html.Div(
             ),
             html.Button('Next round', id='button'),
         ])
-
-
-
-])
+    ])
 
 # Running the server
 if __name__ == '__main__':
