@@ -11,8 +11,8 @@ from modAL.models import ActiveLearner
 import dash_core_components as dcc
 import pandas as pd
 import pickle
-import plotly.io as pio
-pio.renderers.default = 'iframe'
+import json
+import dash_html_components as html
 filename = 'finalized_model.sav'
 cmap_light = [[1, "rgb(165,0,38)"],
               [0.5, "rgb(165,0,38)"],
@@ -97,36 +97,33 @@ def register_callbacks(app):
             # Plot the query instances
             selected = pca.fit_transform(query_instance)
             data = [
-                # go.Scatter(x=df_pca['1'],
-                #                y=df_pca['2'],
-                #                mode='markers',
-                #                marker=dict(color='grey',
-                #                            #line=dict(color='grey', width=12)
-                #                            ),
-                #                name='unlabeled data'),
-                #     go.Scatter(x=selected[:, 0],
-                #                y=selected[:, 1],
-                #                mode='markers',
-                #                marker=dict(color='black', size=15,
-                #                            line=dict(color='black', width=12)),
-                #                name='query'+str(n_clicks)),
+                go.Scatter(x=df_pca['1'],
+                               y=df_pca['2'],
+                               mode='markers',
+                               marker=dict(color='grey',
+                                           #line=dict(color='grey', width=12)
+                                           ),
+                               name='unlabeled data'),
+                go.Scatter(x=selected[:, 0],
+                               y=selected[:, 1],
+                               mode='markers',
+                               marker=dict(color='black', size=10,
+                                           line=dict(color='black', width=12)),
+                               name='query'+str(n_clicks)),
 
-                go.Contour(x=df_pca['1'], y=df_pca['2'],
-                           z=uncertainity,
-                           colorscale=[[0, 'purple'],
-                                       [1, 'cyan'],
-                                       ],
-
-                           autocontour=True,
-                           opacity=0.5,
-                           ncontours=2,
-                           hoverinfo='none',
-                           contours=dict(type="constraint",
-                                         coloring='heatmap',
-                                         showlines=False),
-                           showscale=False
-                           )
+                # go.Contour(x=df_pca['1'], y=df_pca['2'],
+                #            z=uncertainity,
+                #            colorscale=[[0, 'purple'],
+                #                        [1, 'cyan'],
+                #                        ],
+                #            opacity=0.5,
+                #            hoverinfo='none',
+                #            contours=dict(coloring='fill',
+                #                          showlines=False),
+                #            showscale=False
+                #            )
             ]
+            print(y_pool[query_indices])
             # Get the labels for the query instances
             learner.teach(x_pool[query_indices], y_pool[query_indices])
             # Remove query indices from unlabelled pool
@@ -145,8 +142,17 @@ def register_callbacks(app):
         print('score after query '+str(n_clicks) + ' ' + str(learner.score(x, y)))
         layout = go.Layout(
             paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
+            plot_bgcolor='rgba(0,0,0,0)',
+            clickmode='event+select'
         )
         fig = go.Figure(data, layout)
         decision = go.Figure(data_dec)
         return fig, decision
+
+    @app.callback(
+        Output('selected-data', 'children'),
+        [Input('scatter', 'hoverData')])
+    def display_selected_data(selectedData):
+        print("clicked")
+        print(selectedData)
+        return html.P(selectedData)

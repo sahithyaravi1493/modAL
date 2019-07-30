@@ -59,6 +59,7 @@ app.layout = html.Div(
                 style={'width': '60%', 'height': '100%', 'display': 'inline-block', 'position': 'relative'}
             ),
             html.Button('Next round', id='button'),
+            html.Div(id='selectedData')
         ])
     ])
 
