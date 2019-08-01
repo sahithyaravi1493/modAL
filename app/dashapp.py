@@ -15,7 +15,7 @@ app.layout = html.Div(
                            href='https://github.com/plotly/dash-svm')), className="banner",),
         html.Div(children=[
             html.Div(
-                id='div-graphs',
+
                 children=dcc.Loading(dcc.Graph(id='scatter'), fullscreen=True),
                 style={'width': '60%', 'height': '100%', 'display': 'inline-block', 'position': 'relative'}
             ),
@@ -50,6 +50,15 @@ app.layout = html.Div(
                             5: '5'},
                             value=3
                         )),
+                    html.P(''),
+                    html.P(''),
+
+                    html.Div(dcc.Input(id='query',
+                              placeholder='enter the label',
+                              type='text',
+                              debounce=True,
+                              disabled=True,
+                              value=''))
 
 
                 ]),
@@ -59,7 +68,9 @@ app.layout = html.Div(
                 style={'width': '60%', 'height': '100%', 'display': 'inline-block', 'position': 'relative'}
             ),
             html.Button('Next round', id='button'),
-            html.Div(id='selectedData')
+            html.Div(id='dummy'),
+            html.Div(id='selected-data'),
+            html.Div(id='hidden-div', style={'display': 'none'}),
         ])
     ])
 

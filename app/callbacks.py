@@ -1,4 +1,4 @@
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from sklearn.datasets import load_breast_cancer, load_iris
 from sklearn.decomposition import PCA
 import numpy as np
@@ -86,6 +86,10 @@ def register_callbacks(app):
             predictions = learner.predict(x)
             print(" unqueried score", learner.score(x, y.ravel()))
             data_dec = []
+            layout = go.Layout(
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+            )
         else:
             x_pool = np.load('x_pool.npy')
             y_pool = np.load('y_pool.npy')
@@ -123,6 +127,11 @@ def register_callbacks(app):
                 #            showscale=False
                 #            )
             ]
+            layout = go.Layout(
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                clickmode='event+select'
+            )
             print(y_pool[query_indices])
             # Get the labels for the query instances
             learner.teach(x_pool[query_indices], y_pool[query_indices])
@@ -140,19 +149,45 @@ def register_callbacks(app):
         np.save('y_pool.npy', y_pool)
         pickle.dump(learner, open(filename, 'wb'))
         print('score after query '+str(n_clicks) + ' ' + str(learner.score(x, y)))
-        layout = go.Layout(
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
-            clickmode='event+select'
-        )
+
         fig = go.Figure(data, layout)
         decision = go.Figure(data_dec)
         return fig, decision
 
     @app.callback(
+        [Output('hidden-div', 'children'),
+         Output('query','disabled')],
+        [Input('scatter', 'selectedData')],
+        [State('hidden-div', 'children')])
+    def get_selected_data(clickData, previous):
+        print('entered', clickData)
+        if clickData is not None:
+            result = clickData['points']
+            if previous:
+                previous_list = json.loads(previous)
+                if previous_list is not None:
+                    result = previous_list + result
+
+            return json.dumps(result), False
+        else:
+            return [], True
+
+    @app.callback(
         Output('selected-data', 'children'),
-        [Input('scatter', 'hoverData')])
-    def display_selected_data(selectedData):
-        print("clicked")
-        print(selectedData)
-        return html.P(selectedData)
+        [Input('hidden-div', 'children')]
+        )
+    def display_selected_data(points):
+        if points:
+            result = json.loads(points)
+            print(len(result))
+
+            if result is not None:
+                return html.P('clicked')
+
+    @app.callback(
+        Output('dummy', 'children'),
+        [Input('query', 'value')],
+        [State('hidden-div', 'children')])
+    def get_selected_data(query, points):
+        print (query)
+        return query, True
