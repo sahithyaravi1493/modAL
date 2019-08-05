@@ -33,7 +33,8 @@ def register_callbacks(app):
                   Output('decision','figure')],
                   [Input('select-dataset', 'value'),
                   Input('query-batch-size', 'value'),
-                  Input('button', 'n_clicks')
+                  Input('button', 'n_clicks'),
+
                  ])
     def update_scatter_plot(dataset, batch_size, n_clicks):
 
@@ -96,7 +97,7 @@ def register_callbacks(app):
             learner = pickle.load(open(filename, 'rb'))
             query_indices, query_instance, uncertainity = learner.query(x_pool)
             uncertainity = [1 if value > 0.2 else 0 for value in uncertainity]
-            print(uncertainity)
+            #print(uncertainity)
 
             # Plot the query instances
             selected = pca.fit_transform(query_instance)
@@ -132,7 +133,7 @@ def register_callbacks(app):
                 plot_bgcolor='rgba(0,0,0,0)',
                 clickmode='event+select'
             )
-            print(y_pool[query_indices])
+            #print(y_pool[query_indices])
             # Get the labels for the query instances
             learner.teach(x_pool[query_indices], y_pool[query_indices])
             # Remove query indices from unlabelled pool
@@ -189,5 +190,5 @@ def register_callbacks(app):
         [Input('query', 'value')],
         [State('hidden-div', 'children')])
     def get_selected_data(query, points):
-        print (query)
-        return query, True
+        print ("query", query)
+        return query

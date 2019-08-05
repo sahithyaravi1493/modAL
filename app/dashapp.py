@@ -19,6 +19,14 @@ app.layout = html.Div(
                 children=dcc.Loading(dcc.Graph(id='scatter'), fullscreen=True),
                 style={'width': '60%', 'height': '100%', 'display': 'inline-block', 'position': 'relative'}
             ),
+
+            html.Div(dcc.Input(id='query',
+                               placeholder='enter the label',
+                               type='text',
+                               debounce=True,
+                               disabled=True,
+                               value='')),
+
             html.Div(
 
                 style={'width': '20%', 'display': 'inline-block',
@@ -50,15 +58,6 @@ app.layout = html.Div(
                             5: '5'},
                             value=3
                         )),
-                    html.P(''),
-                    html.P(''),
-
-                    html.Div(dcc.Input(id='query',
-                              placeholder='enter the label',
-                              type='text',
-                              debounce=True,
-                              disabled=True,
-                              value=''))
 
 
                 ]),
