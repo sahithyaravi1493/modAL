@@ -32,7 +32,8 @@ app.layout = html.Div(
                     dcc.Dropdown(id='select-dataset',
                                  options=[
                                      {'label': 'iris', 'value': 'iris'},
-                                     {'label': 'breast-cancer', 'value': 'bc'}],
+                                     {'label': 'breast-cancer', 'value': 'bc'},
+                                      {'label': 'wine', 'value': 'wine'}],
                                  clearable=False,
                                  searchable=False,
                                  value='bc'
@@ -69,7 +70,7 @@ app.layout = html.Div(
 
             html.Div(
                 id='decision-graph',
-                children=(dcc.Graph(id='decision')),
+                children=dcc.Loading(dcc.Graph(id='decision'), fullscreen=True),
                 style={'width': '60%', 'height': '100%', 'display': 'inline-block', 'position': 'relative'}
             ),
             html.Button('Next round', id='button'),

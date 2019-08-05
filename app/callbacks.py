@@ -1,5 +1,5 @@
 from dash.dependencies import Input, Output, State
-from sklearn.datasets import load_breast_cancer, load_iris
+from sklearn.datasets import load_breast_cancer, load_iris, load_wine
 from sklearn.decomposition import PCA
 import numpy as np
 import plotly.graph_objs as go
@@ -41,10 +41,12 @@ def register_callbacks(app):
 
         if dataset == 'bc':
             raw_data = load_breast_cancer()
-        else:
+        elif dataset == 'iris':
             raw_data = load_iris()
+        else:
+            raw_data = load_wine()
         df = pd.DataFrame(data=np.c_[raw_data['data'], raw_data['target']],
-                          columns=raw_data['feature_names'].tolist() + ['target'])
+                          columns=list(raw_data['feature_names']) + ['target'])
         df.to_pickle('df.pkl')
 
         # Active learner supports numpy matrices, hence use .values
@@ -52,6 +54,8 @@ def register_callbacks(app):
         y = df.drop(raw_data.feature_names, axis=1).values
         np.save('x.npy', x)
         np.save('y.npy', y)
+        print(np.unique(y))
+        print(raw_data.target_names)
 
         # Define our PCA transformer and fit it onto our raw dataset.
         pca = PCA(n_components=2, random_state=100)
@@ -143,13 +147,15 @@ def register_callbacks(app):
         return fig
 
     @app.callback(
-        Output('query', 'disabled'),
+        [Output('query', 'disabled'),
+         Output('query', 'placeholder')],
         [Input('scatter', 'selectedData')])
     def enable_query(selectedData):
         if selectedData is not None:
-            return False
+            y = np.load('y.npy')
+            return False, 'enter labels'+ str(np.unique(y))
         else:
-            return True
+            return True, 'enter label'
 
     @app.callback(
         Output('hidden-div', 'children'),
@@ -216,7 +222,8 @@ def register_callbacks(app):
                                        mode='markers',
                                        name='unlabeled data',
                                        marker=dict(color=predictions,
-                                                   colorscale=cmap_bold))]
+                                                   colorscale=cmap_bold,
+                                                   showscale=True))]
                 np.save('x_pool.npy', x_pool)
                 np.save('y_pool.npy', y_pool)
                 score = learner.score(x, y)
