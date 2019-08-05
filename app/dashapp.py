@@ -21,14 +21,6 @@ app.layout = html.Div(
                 style={'width': '60%', 'height': '100%', 'display': 'inline-block', 'position': 'relative'}
             ),
 
-            html.Div([dcc.Input(id='query',
-                                placeholder='enter the label',
-                                type='text',
-                                debounce=True,
-                                disabled=True,
-                                value=''),
-                      html.Button('Submit', id='submit'),
-                      ]),
 
 
             html.Div(
@@ -65,6 +57,16 @@ app.layout = html.Div(
 
 
                 ]),
+            html.Div([dcc.Input(id='query',
+                                placeholder='enter the label',
+                                type='text',
+                                debounce=True,
+                                disabled=True,
+                                value=''),
+                      html.Button('Submit', id='submit'),
+                      ],
+                     style={'width': '60%', 'height': '100%', 'display': 'inline-block', 'position': 'relative'}),
+
             html.Div(
                 id='decision-graph',
                 children=(dcc.Graph(id='decision')),
