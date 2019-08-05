@@ -25,7 +25,9 @@ app.layout = html.Div(
                                type='text',
                                debounce=True,
                                disabled=True,
-                               value='')),
+                               value=''),
+                    ),
+            html.Button('Submit', id='submit'),
 
             html.Div(
 
@@ -69,7 +71,7 @@ app.layout = html.Div(
             html.Button('Next round', id='button'),
             html.Div(id='dummy'),
             html.Div(id='selected-data'),
-            html.Div(id='hidden-div', style={'display': 'none'}),
+            dcc.Loading(html.Div(id='hidden-div', style={'display': 'none'}), fullscreen=True),
         ])
     ])
 

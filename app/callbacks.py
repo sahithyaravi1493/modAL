@@ -12,6 +12,7 @@ import dash_core_components as dcc
 import pandas as pd
 import pickle
 import json
+from ast import literal_eval
 import dash_html_components as html
 filename = 'finalized_model.sav'
 cmap_light = [[1, "rgb(165,0,38)"],
@@ -133,12 +134,10 @@ def register_callbacks(app):
                 plot_bgcolor='rgba(0,0,0,0)',
                 clickmode='event+select'
             )
-            #print(y_pool[query_indices])
-            # Get the labels for the query instances
-            learner.teach(x_pool[query_indices], y_pool[query_indices])
+
             # Remove query indices from unlabelled pool
-            x_pool = np.delete(x_pool, query_indices, axis=0)
-            y_pool = np.delete(y_pool, query_indices)
+            #x_pool = np.delete(x_pool, query_indices, axis=0)
+           # y_pool = np.delete(y_pool, query_indices)
             predictions = learner.predict(x)
             data_dec = [go.Scatter(x=df_pca['1'],
                                y=df_pca['2'],
@@ -155,40 +154,65 @@ def register_callbacks(app):
         decision = go.Figure(data_dec)
         return fig, decision
 
-    @app.callback(
-        [Output('hidden-div', 'children'),
-         Output('query','disabled')],
-        [Input('scatter', 'selectedData')],
-        [State('hidden-div', 'children')])
-    def get_selected_data(clickData, previous):
-        print('entered', clickData)
-        if clickData is not None:
-            result = clickData['points']
-            if previous:
-                previous_list = json.loads(previous)
-                if previous_list is not None:
-                    result = previous_list + result
 
-            return json.dumps(result), False
+    @app.callback(
+        Output('query', 'disabled'),
+        [Input('scatter', 'selectedData')])
+    def enable_query(selectedData):
+        if selectedData is not None:
+            return False
         else:
-            return [], True
+            return True
 
     @app.callback(
-        Output('selected-data', 'children'),
-        [Input('hidden-div', 'children')]
-        )
-    def display_selected_data(points):
-        if points:
-            result = json.loads(points)
-            print(len(result))
+        Output('hidden-div', 'children'),
+        [Input('scatter', 'selectedData'),
+         Input('submit', 'n_clicks')],
+        [State('query', 'value'),
+         State('hidden-div', 'children')])
+    def get_selected_data(clickData, submit, query, previous):
+        if previous is None:
+            print()
+            result_dict = dict()
+            result_dict['clicks'] = 0
+            result_dict['points'] = []
+            result_dict['queries']=[]
+        else:
+            if clickData is not None and query and previous is not None:
+                if submit > literal_eval(previous)["clicks"]:
 
-            if result is not None:
-                return html.P('clicked')
+                    previous_list = json.loads(previous)
+                    result_dict = previous_list
+                    points = previous_list['points'] + clickData['points']
+                    queries = previous_list['queries']+[int(query)]
+                    result_dict['points'] = points
+                    result_dict['clicks'] = submit
+                    result_dict['queries'] = queries
+                else:
+                    result_dict = json.loads(previous)
+            else:
+                result_dict = json.loads(previous)
+
+        return json.dumps(result_dict)
 
     @app.callback(
         Output('dummy', 'children'),
-        [Input('query', 'value')],
-        [State('hidden-div', 'children')])
-    def get_selected_data(query, points):
-        print ("query", query)
-        return query
+        [Input('hidden-div', 'children'),
+         Input('query-batch-size', 'value'),
+         ])
+    def perform_active_learning(previous, batch_size):
+        if previous:
+            selected_queries = json.loads(previous)
+            if(literal_eval(previous)["clicks"]) == batch_size:
+                print('batch size met')
+                x_pool = np.load('x_pool.npy')
+                y_pool = np.load('y_pool.npy')
+                learner = pickle.load(open(filename, 'rb'))
+                query_results = literal_eval(previous)['queries']
+                print(query_results)
+                learner.teach(x_pool[0:batch_size], query_results)
+
+
+            return '1'
+
+
