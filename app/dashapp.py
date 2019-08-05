@@ -17,17 +17,19 @@ app.layout = html.Div(
             html.Div(
 
                 children=dcc.Loading(dcc.Graph(id='scatter'), fullscreen=True),
+
                 style={'width': '60%', 'height': '100%', 'display': 'inline-block', 'position': 'relative'}
             ),
 
-            html.Div(dcc.Input(id='query',
-                               placeholder='enter the label',
-                               type='text',
-                               debounce=True,
-                               disabled=True,
-                               value=''),
-                    ),
-            html.Button('Submit', id='submit'),
+            html.Div([dcc.Input(id='query',
+                                placeholder='enter the label',
+                                type='text',
+                                debounce=True,
+                                disabled=True,
+                                value=''),
+                      html.Button('Submit', id='submit'),
+                      ]),
+
 
             html.Div(
 
@@ -48,18 +50,18 @@ app.layout = html.Div(
                            style={'text-align': 'left', 'color': 'light-grey'}),
                     html.Div(dcc.Slider(
 
-                            id='query-batch-size',
-                            min=1,
-                            max=5,
-                            step=1,
-                            marks={
+                        id='query-batch-size',
+                        min=1,
+                        max=5,
+                        step=1,
+                        marks={
                             1: '1',
                             2: '2',
                             3: '3',
                             4: '4',
                             5: '5'},
-                            value=3
-                        )),
+                        value=3
+                    )),
 
 
                 ]),
@@ -69,7 +71,8 @@ app.layout = html.Div(
                 style={'width': '60%', 'height': '100%', 'display': 'inline-block', 'position': 'relative'}
             ),
             html.Button('Next round', id='button'),
-            html.Div(id='dummy'),
+            html.H4('Score'),
+            html.Div(id='score'),
             html.Div(id='selected-data'),
             dcc.Loading(html.Div(id='hidden-div', style={'display': 'none'}), fullscreen=True),
         ])

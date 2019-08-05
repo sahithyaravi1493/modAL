@@ -30,8 +30,8 @@ cmap_bold = [[0, '#FF0000'], [0.5, '#00FF00'], [1, '#0000FF']]
 
 
 def register_callbacks(app):
-    @app.callback([Output('scatter', 'figure'),
-                  Output('decision','figure')],
+    @app.callback(Output('scatter', 'figure'),
+
                   [Input('select-dataset', 'value'),
                   Input('query-batch-size', 'value'),
                   Input('button', 'n_clicks'),
@@ -45,15 +45,19 @@ def register_callbacks(app):
             raw_data = load_iris()
         df = pd.DataFrame(data=np.c_[raw_data['data'], raw_data['target']],
                           columns=raw_data['feature_names'].tolist() + ['target'])
+        df.to_pickle('df.pkl')
 
         # Active learner supports numpy matrices, hence use .values
         x = df[raw_data.feature_names].values
         y = df.drop(raw_data.feature_names, axis=1).values
+        np.save('x.npy', x)
+        np.save('y.npy', y)
 
         # Define our PCA transformer and fit it onto our raw dataset.
         pca = PCA(n_components=2, random_state=100)
         principals = pca.fit_transform(x)
         df_pca = pd.DataFrame(data=principals, columns=['1', '2'])
+        df_pca.to_pickle('df_pca.pkl')
 
         # Randomly choose training examples
         df_train = df.sample(n=3)
@@ -76,6 +80,8 @@ def register_callbacks(app):
             df_pool = df[~df.index.isin(df_train.index)]
             x_pool = df_pool[raw_data['feature_names']].values
             y_pool = df_pool.drop(raw_data['feature_names'], axis=1).values.ravel()
+            np.save('x_pool.npy', x_pool)
+            np.save('y_pool.npy', y_pool)
             # ML model
             rf = RandomForestClassifier(n_jobs=-1, n_estimators=20, max_features=0.8)
             # batch sampling
@@ -94,17 +100,14 @@ def register_callbacks(app):
             )
         else:
             x_pool = np.load('x_pool.npy')
-            y_pool = np.load('y_pool.npy')
             learner = pickle.load(open(filename, 'rb'))
             query_indices, query_instance, uncertainity = learner.query(x_pool)
             uncertainity = [1 if value > 0.2 else 0 for value in uncertainity]
-            #print(uncertainity)
-
             # Plot the query instances
             selected = pca.fit_transform(query_instance)
             data = [
                 go.Scatter(x=df_pca['1'],
-                               y=df_pca['2'],
+                           y=df_pca['2'],
                                mode='markers',
                                marker=dict(color='grey',
                                            #line=dict(color='grey', width=12)
@@ -135,25 +138,9 @@ def register_callbacks(app):
                 clickmode='event+select'
             )
 
-            # Remove query indices from unlabelled pool
-            #x_pool = np.delete(x_pool, query_indices, axis=0)
-           # y_pool = np.delete(y_pool, query_indices)
-            predictions = learner.predict(x)
-            data_dec = [go.Scatter(x=df_pca['1'],
-                               y=df_pca['2'],
-                               mode='markers',
-                               name='unlabeled data',
-                               marker=dict(color=predictions,
-                                           colorscale=cmap_bold))]
-        np.save('x_pool.npy', x_pool)
-        np.save('y_pool.npy', y_pool)
         pickle.dump(learner, open(filename, 'wb'))
-        print('score after query '+str(n_clicks) + ' ' + str(learner.score(x, y)))
-
         fig = go.Figure(data, layout)
-        decision = go.Figure(data_dec)
-        return fig, decision
-
+        return fig
 
     @app.callback(
         Output('query', 'disabled'),
@@ -196,23 +183,45 @@ def register_callbacks(app):
         return json.dumps(result_dict)
 
     @app.callback(
-        Output('dummy', 'children'),
+        [Output('decision', 'figure'),
+         Output('score', 'children')],
         [Input('hidden-div', 'children'),
          Input('query-batch-size', 'value'),
          ])
     def perform_active_learning(previous, batch_size):
+        decision = go.Figure()
+        score = ''
         if previous:
-            selected_queries = json.loads(previous)
             if(literal_eval(previous)["clicks"]) == batch_size:
                 print('batch size met')
                 x_pool = np.load('x_pool.npy')
                 y_pool = np.load('y_pool.npy')
+                x = np.load('x.npy')
+                y = np.load('y.npy')
                 learner = pickle.load(open(filename, 'rb'))
                 query_results = literal_eval(previous)['queries']
                 print(query_results)
-                learner.teach(x_pool[0:batch_size], query_results)
+                query_indices = list(range(0, batch_size))
+                learner.teach(x_pool[query_indices], query_results)
+                # Remove query indices from unlabelled pool
+                x_pool = np.delete(x_pool, query_indices, axis=0)
+                y_pool = np.delete(y_pool, query_indices)
 
+                # Active learner supports numpy matrices, hence use .values
 
-            return '1'
+                df_pca = pd.read_pickle('df_pca.pkl')
+                predictions = learner.predict(x)
+                data_dec = [go.Scatter(x=df_pca['1'],
+                                       y=df_pca['2'],
+                                       mode='markers',
+                                       name='unlabeled data',
+                                       marker=dict(color=predictions,
+                                                   colorscale=cmap_bold))]
+                np.save('x_pool.npy', x_pool)
+                np.save('y_pool.npy', y_pool)
+                score = learner.score(x, y)
+                print('score after query ' + str(score))
+                decision = go.Figure(data_dec)
+            return decision, score
 
 
