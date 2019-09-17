@@ -10,7 +10,7 @@ from sklearn.metrics.pairwise import pairwise_distances, pairwise_distances_argm
 
 from modAL.utils.data import data_vstack, modALinput
 from modAL.models.base import BaseCommittee, BaseLearner
-from modAL.uncertainty import classifier_uncertainty
+from modAL.uncertainty import classifier_uncertainty, classifier_entropy
 
 
 def select_cold_start_instance(X: modALinput,
@@ -206,6 +206,11 @@ def uncertainty_batch_sampling(classifier: Union[BaseLearner, BaseCommittee],
         Indices of the instances from `X` chosen to be labelled; records from `X` chosen to be labelled.
     """
     uncertainty = classifier_uncertainty(classifier, X, **uncertainty_measure_kwargs)
+    entropy = classifier_entropy(classifier, X)
     query_indices = ranked_batch(classifier, unlabeled=X, uncertainty_scores=uncertainty,
                                  n_instances=n_instances, metric=metric, n_jobs=n_jobs)
-    return query_indices, X[query_indices], uncertainty
+
+    return query_indices, X[query_indices], entropy
+
+
+
